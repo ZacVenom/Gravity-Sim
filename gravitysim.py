@@ -29,14 +29,71 @@ pg.font.init()
 my_font = pg.font.SysFont('Arial', 20)
 zoom = 1.0
 gravity_objects:list[GravityObject] = []
+extraObj = False
+offsetA = pg.Vector2()
+isAdding = False
+oldMousePos = pg.Vector2()
+
+def addObject(width:int,mass:int,color:str,pos:pg.Vector2,x:float=0,y:float=0) -> None:
+    gravity_objects.append(GravityObject(SCREEN,width,mass,color,pos,x,y,SHOW_ARROW))
+"""
+Adds an object, with parameters
+width: int - visible size of the object
+mass: int - actual mass of the object, used in gravity calculation
+color: str - use either e.g. "red", or rgb values to string
+pos: Vector2 - starting position, recommended to use relatively to the screen
+x: float - starting speed on the x axis
+y: float - starting speed on the y axis
+"""
+
+
+def getMassAverage() -> int:
+    avgMass = 0
+    for obj in gravity_objects:
+        avgMass += obj.mass
+    return int(avgMass/len(gravity_objects))
+
+def getWidthAverage() -> int:
+    avgWidth = 0
+    for obj in gravity_objects:
+        avgWidth += obj.width
+    return int(avgWidth/len(gravity_objects))
+
+def handleObjectAdding():
+    global isAdding
+    global oldMousePos
+    global extraObj
+    if not isAdding:
+        mouse_pos = pg.mouse.get_pos()
+        mouse_pos = pg.Vector2(mouse_pos[0],mouse_pos[1])
+        oldMousePos = mouse_pos
+        isAdding = True
+        extraObj = not extraObj
+    else:
+        mouse_pos = pg.mouse.get_pos()
+        mouse_pos = pg.Vector2(mouse_pos[0],mouse_pos[1]) 
+        mouse_pos -= offsetA
+        oldMousePos -= offsetA
+        mouse_pos = pg.Vector2((- oldMousePos[0] + mouse_pos[0])/100,(-oldMousePos[1]+mouse_pos[1])/100)
+        addObject(getWidthAverage(),getMassAverage(),"pink",oldMousePos,mouse_pos[0],mouse_pos[1])
+        extraObj = not extraObj
+        isAdding = False
 
 def userInput():
     global zoom
+    global extraObj
+    global oldMousePos
     keys = pg.key.get_pressed()
     if keys[pg.K_UP]:
         zoom *= 1.01
     if keys[pg.K_DOWN]:
         zoom /= 1.01
+    if keys[pg.K_q] and not extraObj:
+        handleObjectAdding()
+    if isAdding:
+        pg.draw.line(SCREEN,"red",oldMousePos,pg.mouse.get_pos())
+
+
 
 def gravityCalculation():
     for i in range(len(gravity_objects)):
@@ -62,23 +119,13 @@ def screenShowcase(offset):
             i+=1
 
 """
-Adds an object, with parameters
-width: int - visible size of the object
-mass: int - actual mass of the object, used in gravity calculation
-color: str - use either e.g. "red", or rgb values to string
-pos: Vector2 - starting position, recommended to use relatively to the screen
-x: float - starting speed on the x axis
-y: float - starting speed on the y axis
-"""
-def addObject(width:int,mass:int,color:str,pos:pg.Vector2,x:float=0,y:float=0) -> None:
-    gravity_objects.append(GravityObject(SCREEN,width,mass,color,pos,x,y,SHOW_ARROW))
-
-"""
 Starts the program, call after all objects have been added with addObject
 """
 def start() -> None:
     running = True
-
+    global offsetA
+    global extraObj
+    delay = 0
     while running:
         SCREEN.fill("black")
         userInput()
@@ -87,9 +134,15 @@ def start() -> None:
                 running = False
         gravityCalculation()
         offset = gravity_objects[0].pos - pg.Vector2(SCREEN.get_width() / 2, SCREEN.get_height() / 2) /zoom
+        offsetA = offset.copy()
         screenShowcase(offset)
 
         pg.display.flip()
+        if extraObj:
+            if delay > 100:
+                delay = 0
+                extraObj = not extraObj
+            delay += 1
         DT = CLOCK.tick(60) / 1000
     pg.quit()
 
