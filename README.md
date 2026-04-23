@@ -36,7 +36,7 @@ This results in:
 - Objects display velocity direction as arrows  
 - (Optional) Speed values shown on screen
 
-## ▶How to run
+## How to run
 
 1. Install dependencies:
    ```bash
@@ -44,3 +44,18 @@ This results in:
 2. Run the example:
    ```bash
    python3 example.py  
+
+## Customizing the Simulation
+
+You can create your own scenarios by modifying `example.py`.
+
+### Creating objects
+
+Each object is defined by its position, velocity, and mass:
+
+```python
+from gravityObject import GravityObject
+from pygame.math import Vector2
+
+sun = GravityObject(Vector2(0, 0), Vector2(0, 0), 10000)
+planet = GravityObject(Vector2(200, 0), Vector2(0, 5), 10)
